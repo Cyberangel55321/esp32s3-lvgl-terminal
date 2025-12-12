@@ -51,19 +51,7 @@ jobs:
         with:
           name: esp32s3-lvgl-terminal-firmware
           path: release/
-      
-      - name: Upload to Release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            release/firmware.bin
-            release/bootloader.bin
-            release/partitions.bin
-            release/build-info.txt
-          env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+          
       - name: Create Release
         if: github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v1

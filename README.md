@@ -1,136 +1,252 @@
 # esp32s3-lvgl-terminal
 
-基于 **LVGL** 和 **FreeRTOS** 的 **ESP32-S3** 多功能智能终端，集成：
+基于 ESP32-S3 的 LVGL 多功能智能终端，集成Wi-Fi和亮度设置、串口终端、时间和天气显示、音乐播放、小智AI语音对话、小游戏等功能。
 
-- Wi-Fi 扫描与连接管理
-- 时间同步与多日天气展示
-- 串口终端
-- SD卡文件与本地MP3音乐播放
-- 语音识别 + 语音合成（百度实时 ASR + TTS）
-- 文本对话（MiniMax / 可扩展其他大模型接口）
-- LVGL 小游戏（2048、植物大战僵尸、消消乐、羊了个羊）
+****
 
----
+**⭐ 欢迎提出Issues和PR，如果这个项目对你有帮助，请给个 Star！**
 
-## 1. 功能概述
-- **GUI 框架**：采用 LVGL 8，自定义多 Tab 页面与独立游戏屏幕，任务化刷新（`lvgl_task`）。
-- **Wi-Fi 管理**：自动扫描、自动回连上一次网络、动态更新 UI 控件显示连接状态。
-- **时间与天气**：通过 NTP 获取本地时间；调用心知天气接口展示当日与未来 7 日天气。
-- **音乐播放**：从 SD 根目录扫描 `.mp3` 列表；支持背景音乐与游戏内切换；可调节音量与暂停。
-- **语音交互**：实时语音识别（WebSocket 推送 PCM），获取文本后调用对话 API，再分段语音合成播报。
-- **AI 聊天**：对接 MiniMax ChatCompletion（已硬编码示例，需自行替换安全密钥）；UI 展示问答区与语音开关。
-- **小游戏集成**：通过独立目录与 LVGL 组件组织多款示例游戏与资源（图片、字体、地图）。
-- **串口面板**：实时读取串口输入并追加显示在文本区域。
+## 📑 目录 
 
----
+- [📖 项目简介](#-项目简介)
+- [📁 项目结构](#-项目结构)
+- [🛠️ 硬件配置](#️-硬件配置)
+  - [1. 物料清单](#1-物料清单)
+  - [2. 引脚映射](#2-引脚映射)
+  - [3. 打板焊接](#3-打板焊接)
+- [🔧 软件配置](#-软件配置)
+  - [1. 安装 VSCode](#1-安装-vscode)
+  - [2. 安装插件](#2-安装插件)
+  - [3. 编译烧录](#3-编译烧录)
+- [⚠️ 注意事项](#️-注意事项)
+- [📧 联系方式](#-联系方式)
 
-## 2. 硬件需求与引脚映射
-| 功能 | 组件 | 主要引脚 | 说明 |
-|------|------|---------|------|
-| 显示屏 + 触摸 | TFT_eSPI + CST816S | 屏幕 SPI 依赖默认 TFT_eSPI 配置；触摸 SDA=3 SCL=18 RST=8 IRQ=46 | 当前分辨率 320x240，可在 `main.cpp` 修改 `screenWidth/Height` |
-| 音频输出 (I2S) | DAC / 功放 | BCLK=40 LRC=41 DOUT=39 | `music.cpp` 中 `setPinout` 定义 |
-| 麦克风 (I2S IN) | I2S MEMS MIC | SCK=11 WS=13 SD=12 | 采样率 16kHz，单声道 |
-| SD 卡 (SPI) | Micro SD | CS=9 SCK=14 MISO=17 MOSI=10 | 频率 4MHz 可调整 |
-| PSRAM | 板载 | - | 需使能 `-D BOARD_HAS_PSRAM` 以满足 LVGL + 音频缓存 |
+## 📖 项目简介
 
----
+这是一个基于 **ESP32-S3（N16R8）**和 **LVGL** 图形库开发的多功能智能终端项目。通过友好的触摸屏界面，提供丰富的交互功能和便捷的设备管理，项目采用 FreeRTOS 多任务架构，支持高效的并发处理。
 
-## 3. 工程目录结构说明
+**主要功能：**
+
+- ✅ **主界面**：实时显示时间、滚动文字、APP入口等信息
+- ✅ **设置**：支持屏幕亮度调节、Wi-Fi 扫描与连接配置
+- ✅ **串口**：实时串口数据收发功能
+- ✅ **天气**：显示实况天气和未来三天天气预报（心知天气 API）
+- ✅ **音乐**：播放 SD 卡内的 MP3 音乐，支持音量调节
+- ✅ **小智**：AI 语音对话（百度语音识别 + MiniMax AI 聊天模型）
+- ✅ **游戏**：集成开源 LVGL 小游戏（2048、植物大战僵尸、消消乐、羊了个羊）
+- ✅ **日历**：日历信息查看
+- ✅ **电源管理**：使用 5V USB 或 4.2V 锂电池供电，接上锂电池时插入USB可边充边放
+- ✅ **板载读卡**：支持关闭开关时插入USB连接电脑读取SD卡
+
+**视频演示：**
+
+- [LVGL+Freertos开发基于ESP32S3的智能终端系统，源码已上传_哔哩哔哩_bilibili](https://www.bilibili.com/video/BV1xu4m1c74M/?spm_id_from=333.1387.upload.video_card.click&vd_source=b2115ccf4e995ec04004dc3600b1cecb)
+- [LVGL基于ESP32S3的智能终端PLUS_哔哩哔哩_bilibili](https://www.bilibili.com/video/BV1eXSuBkEo8/?spm_id_from=333.1387.upload.video_card.click&vd_source=b2115ccf4e995ec04004dc3600b1cecb)
+
+## 📁 项目结构
+
 ```
-src/
-	main.cpp            // 入口：初始化 LVGL、任务创建、模块启动
-	wifiuser.cpp/.h     // WiFi 扫描与连接逻辑 + UI 状态切换
-	weather.cpp/.h      // NTP 与多日天气获取、JSON 解析与 UI 更新
-	chatgpt.cpp/.h      // MiniMax ChatCompletion 调用示例
-	mic2.cpp/.h         // 百度实时语音识别 + TTS 分段播报
-	music.cpp/.h        // SD MP3 列表扫描与播放控制
-	SDuser.cpp/.h       // SD 初始化与卡类型识别
-	my_gui.cpp/.h       // 基础 GUI 示例与事件处理
-	lvgl_games/         // 游戏入口 + 多款游戏资源与实现
-		pvz/              // 植物大战僵尸
-		lv_100ask_2048/   // 2048 游戏实现
-		xiaoxiaole/       // 消消乐
-		yang/             // 羊了个羊
-ui/                   // UI 由 LVGL 代码生成器生成的组件、图片、字体、屏幕定义
-include/, lib/        // 头文件与外部库占位
-platformio.ini        // 构建与依赖配置
-default_16MB.csv      // 分区表（自定义 16MB Flash）
+esp32s3-lvgl-terminal/
+├── src/                        # 源代码目录
+│   ├── main.cpp                # 主程序入口，初始化与任务创建
+│   ├── config.cpp/.h           # 配置管理模块
+│   ├── data.cpp/.h             # 数据处理模块
+│   ├── task.cpp/.h             # FreeRTOS 任务管理
+│   ├── wifiuser.cpp/.h         # Wi-Fi 扫描、连接与状态管理
+│   ├── music.cpp/.h            # SD卡MP3音乐播放控制
+│   ├── sduser.cpp/.h           # SD卡初始化与文件操作
+│   ├── xiaozhi.cpp/.h          # AI语音对话与识别模块
+│   └── ui/                     # LVGL UI 组件
+│       ├── ui.h                # UI 头文件
+│       └── src/                # UI 源代码
+│           ├── screens/        # 各页面界面
+│           ├── components/     # UI 组件
+│           ├── images/         # 图片资源
+│           ├── fonts/          # 字体资源
+│           └── ui.cpp          # UI 主文件
+├── SquareLine_Project/         # SquareLine Studio 项目文件
+│   ├── SquareLine_Project.spj  # 项目配置文件
+│   ├── assets/                 # 设计资源
+│   ├── backup/                 # 备份文件
+│   └── cache/                  # 缓存文件
+├── hardware/                   # 硬件设计文件
+│   ├── SCH_Schematic_*.pdf     # 原理图PDF
+│   ├── Gerber_PCB_*.zip        # PCB Gerber文件
+│   └── BOM_PCB_*.xlsx          # BOM采购清单
+├── include/                    # 头文件目录
+├── lib/                        # 外部库目录
+├── platformio.ini              # PlatformIO配置文件
+├── default_16MB.csv            # 分区表配置
+├── images
+├── README.md 
+└── LICENSE 
 ```
 
----
+## 🛠️ 硬件配置
 
-## 4. 开发环境搭建
-### 4.1 必备工具
-- VS Code + PlatformIO 插件（推荐）或直接使用 `pio` CLI。
-- 安装 USB 驱动（ESP32-S3 通常免驱，若识别异常请检查线材与端口）。
+### 1. 物料清单
 
-### 4.2 自动依赖安装
-工程使用 `platformio.ini` 中的 `lib_deps` 自动拉取：
-```
-bblanchon/ArduinoJson@^6.21.4
-lvgl/lvgl@^8.3.9
-esphome/ESP32-audioI2S@^2.0.7
-fbiego/CST816S@^1.1.1
-plageoj/UrlEncode@^1.0.1
-gilmaimon/ArduinoWebsockets@^0.5.3
-bodmer/TFT_eSPI@2.5.0
-```
-首次编译会自动下载，无需手动添加。
+- **主控芯片**：【ESP32-S3 N16R8】16MB Flash + 8MB PSRAM
+- **显示屏**：【ST7789】3.5寸 SPI TFT 320x240
+- **触摸屏**：【CST816S】I2C 电容触摸
+- **音频输出**：【NS4168】I2S DAC 功放模块
+- **麦克风**：【MSM261S4030H0R】I2S MEMS 数字麦克风
+- **存储卡**：【闪迪】Micro SD卡
+- **USB读卡**：【GL823K】读卡器
+- **USB转串口**：【CH340N】USB转TTL
+- **电源管理**：【TPS4056】单节锂电池充电、【RT9013】LDO稳压
+- **供电**：【5V USB】供电 或 【4.2V 锂电池】供电
 
-### 4.3 构建步骤（PlatformIO）
-1. 克隆仓库：
+### 2. 引脚映射
+
+| 功能模块 | 引脚定义 |
+|---------|:--------|
+| **SPI TFT 显示屏** | SCK=15, CS=4, MOSI=7, DC=6, BLK=16, RST=5 |
+| **I2C 触摸屏** | SDA=3, SCL=18, RST=8, IRQ=46 |
+| **I2S 音频输出** | BCLK=40, LRC=41, DOUT=39 |
+| **I2S 麦克风** | SCK=11, WS=13, SD=12 |
+| **SPI SD 卡** | CS=9, SCK=14, MISO=17, MOSI=10 |
+
+![3](images/3.png)
+
+### 3. 打板焊接
+
+**PCB 打板：**
+
+- 板子尺寸69.2x50mm，可在 **嘉立创** 领取1~4层专用券免费打板
+
+- 上传 `hardware/` 目录中的 Gerber 文件
+
+- 选择参数：层数2层、板子数量5、板厚1.6mm
+
+  ![1](images/1.png)
+
+**元器件采购与焊接：**
+
+- 参考 `hardware/` 目录中的 BOM 表
+
+- BOM 表包含元器件型号、数量和购买链接
+
+- 板上元器件都标注了位号，根据 BOM 表焊接
+
+- BOM 表中未标注的位号不需要焊接
+
+  ![2](images/2.png)
+
+## 🔧 软件配置
+
+### 1. 安装 VSCode
+
+**下载**：访问 [VSCode 官网](https://code.visualstudio.com/)，点击 "Download for Windows" 下载安装包。
+
+**安装**：运行下载的安装程序，按照提示完成安装。建议勾选 "Add to PATH" 选项。 
+
+### 2. 安装插件
+
+**中文语言包 (Chinese Language Pack)**：
+
+*   点击左侧扩展图标，搜索 `Chinese`。
+*   选择 **Chinese (Simplified) (简体中文) Language Pack**，点击 **Install**。
+*   安装完成后重启 VSCode 即可生效。
+
+**C/C++ 扩展**：
+
+*   点击左侧扩展图标，搜索 `C/C++`。
+*   选择由 **Microsoft** 发布的插件，点击 **Install**。
+*   该插件提供代码高亮、智能提示等功能，是开发 C/C++ 项目的基础。
+
+**Serial Monitor 扩展**：
+
+*   点击左侧扩展图标，搜索 `Serial Monitor`。
+*   选择由 **Microsoft** 发布的插件，点击 **Install**。
+*   该插件提供串口监视器，可以实时查看开发板的输出信息。
+
+**PlatformIO 扩展**：
+
+- 点击左侧扩展图标，搜索 `PlatformIO`。
+
+
+- 选择由 **PlatformIO** 发布的插件（通常是第一个，带有蚂蚁图标），点击 **Install**。
+
+
+- VS Code 右下角会提示 "Installing PlatformIO Core..."，**打开魔法耐心等待**。
+
+- 安装完成后，通常会提示重启 VS Code，请点击 "Reload Now" 或手动重启。
+
+### 3. 编译烧录
+
+**克隆项目**：
+
 ```powershell
 git clone https://github.com/CaddonThaw/esp32s3-lvgl-terminal.git
-cd esp32s3-lvgl-terminal
-```
-2. 打开 VS Code，确保 PlatformIO 已安装。
-3. 连接开发板，选择环境 `env:esp32-s3-devkitc-1`。
-4. 点击 “Build” 编译，通过后使用 “Upload” 烧录。
-5. 打开 “Monitor” 查看串口调试输出（默认 115200）。
-
-### 4.4 如果使用 CLI
-```powershell
-pio run
-pio run --target upload
-pio device monitor -b 115200
 ```
 
-### 4.5 常见编译问题
-- 若 LVGL 内存不足：确认已启用 PSRAM（默认宏已开启）。
-- 若出现分区相关错误：保证使用仓库自带的 `default_16MB.csv`，与板子 Flash 容量匹配。
+**打开项目**：
 
----
+*   在 VS Code 中，点击菜单栏 `File` -> `Open Folder...`。
+*   选择克隆的 `esp32s3-lvgl-terminal` 目录（例如 `f:\github\esp32s3-lvgl-terminal\`）。
 
-## 5. 烧录与打板注意事项
-### 5.1 烧录
-- ESP32-S3-DevKitC 默认 USB 下载，无需额外串口模块。
-- 若无法进入下载：按住 `BOOT` 再点 `EN(RESET)`，然后放开 `BOOT`。
-- 建议使用高质量 USB 数据线（排除供电不稳问题）。
+**等待初始化**：
 
-### 5.2 原理图 / PCB / BOM 与下单
-- hardware中提供完整的硬件资料：原理图、PCB 打板文件与 BOM 表（包含器件购买链接）。
-- 在嘉立创（JLC）免费下单打板：
-	- 直接使用仓库中提供的 PCB 文件；
-	- 上传 GERBER 文件并选择常规参数（2 层、常规板厚、绿色油墨即可）；
-	- 根据 BOM 在嘉立创下单或按链接采购元器件；
+* 首次打开 PlatformIO 项目时，它会自动下载项目所需的开发框架（如 `framework-arduinoespressif32`）和依赖库，**打开魔法耐心等待**。
 
----
+* 若在**开魔法**的情况下下载仍然很慢，则打开本地**C:\Users\用户名\\.platformio\penv\\pip.conf**，替换为以下内容（换成国内源，保存后重启VSCode）：
 
-## 6. 运行时任务与逻辑概览
-| 任务名 | 堆大小 | 核心 | 描述 |
-|--------|--------|------|------|
-| lvgl_task | 15KB | 1 | 定时调用 `lv_timer_handler()` 刷新界面 |
-| WiFi_task | 5KB | 0 | 扫描 / 连接 / UI 状态切换 |
-| serial_task | 5KB | 0 | 串口读取并追加到文本框 |
-| time_task | 5KB | 0 | 每秒更新时间，按需触发天气刷新 |
-| music_task | 5KB | 0 | 音频播放循环与模式切换 |
-| mic_task | 5KB | 0 | 语音识别循环、状态机驱动 |
+  ```
+  [global]
+  user = no
+  index-url = https://mirrors.aliyun.com/pypi/simple/
+  
+  [install]
+  trusted-host = mirrors.aliyun.com
+  ```
 
----
+**配置说明**：
 
-## 7. 声明
-- 本项目参考了多个开源项目库，在此致谢各位大佬！
-- 若发现问题或有改进建议，欢迎提交issue 与 PR ~
-- 如果对您有帮助，欢迎在 GitHub 上给个 Star 支持一下，会持续更新功能与优化软件结构和硬件需求 ~
-- 欢迎关注我的b站账号[会打狙的船长](https://space.bilibili.com/455474218?spm_id_from=333.40164.0.0)和抖音[嵌入式小黑子](https://www.douyin.com/user/MS4wLjABAAAA93EGipD_xAKDd-Qf6lBw07it01oe0HzHE5AW2j9ePjNjbGdEdMG7ic1TDM7EmsUI)，获取更多开源项目和嵌入式学习资料！
+- 百度语音 API：在 `.pio\libdeps\esp32-s3-devkitc-1\baidu-xiaozhi\xiaozhi_ai.h` 中填入 `BAIDU_APP_ID` 、`BAIDU_APP_KEY` 和 `BAIDU_SECRET_KEY`。
+
+  [百度语音 API申请](https://blog.csdn.net/vor234/article/details/136975580)
+
+- MiniMax API：在 `.pio\libdeps\esp32-s3-devkitc-1\baidu-xiaozhi\xiaozhi_minimax.h` 中填入 `MiniMaxKey`。
+
+  [MiniMax API申请](https://vor2345.blog.csdn.net/article/details/136768206)
+
+- 心知天气 API：在 `src\data.cpp` 中填入 `Weather_Key`。
+
+  [心知天气 API申请](https://www.seniverse.com/)
+
+**编译项目**：
+
+*   点击 VS Code 底部状态栏左侧的 **对号图标 (Build)** `✓`。
+*   或者使用快捷键 `Ctrl+Alt+B`。
+*   如果终端输出 `SUCCESS`，说明环境配置无误且代码编译成功。
+
+**烧录程序**：
+
+*   点击底部状态栏的 **右箭头图标 (Upload)** `→`。
+*   按下开发板的BOOT按键，再按下RST按键松开，最后松开BOOT按键进入下载模式。
+*   PlatformIO 会自动寻找串口并烧录程序。
+
+## ⚠️ 注意事项
+
+**首次使用需配置 API 密钥**：百度语音、MiniMax AI 和心知天气的 API 需要自行申请并填入相应配置文件中，否则相关功能无法使用。
+
+**SquareLine Studio 工程**：需要下载 [SquareLin Studio V1.5.0](https://static.squareline.io/downloads/SquareLine_Studio_Windows_v1_5_0.zip) 打开。
+
+**烧录模式进入**：ESP32-S3 需要手动进入下载模式（按住 BOOT 键，按下 RST 键松开，再松开 BOOT 键），部分开发板支持自动下载。
+
+**SD 卡格式要求**：SD 卡推荐使用闪迪，大小无要求，需格式化为 FAT32 文件系统，MP3 文件需放置在根目录才能被识别。
+
+**魔法网络环境**：首次编译需要下载大量依赖库和工具链，建议开启魔法以加快下载速度。如遇下载慢，可配置国内 pip 源。
+
+**电源供电**：建议使用 5V/2A 以上的电源适配器或质量可靠的 USB 数据线，避免因供电不足导致系统不稳定。
+
+**触摸校准**：首次使用触摸屏可能需要校准，若触摸不准确可在代码中调整触摸参数。
+
+**串口波特率**：串口通信波特率默认为 115200，使用串口监视器时需保持一致。
+
+## 📧 联系方式
+
+- 🐧：2103539430
+- 🛰：Ubuntu_Noble
 

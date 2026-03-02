@@ -38,9 +38,23 @@ jobs:
       - name: Prepare firmware files
         run: |
           mkdir -p release
+          
+          # Copy individual bin files to release
           cp .pio/build/esp32-s3-devkitc-1/firmware.bin release/firmware.bin
           cp .pio/build/esp32-s3-devkitc-1/bootloader.bin release/bootloader.bin
           cp .pio/build/esp32-s3-devkitc-1/partitions.bin release/partitions.bin
+          
+          # Prepare flash package
+          cp -r scripts flash
+          rm -r flash/bin/firmware.bin
+          rm -r flash/bin/bootloader.bin
+          rm -r flash/bin/partitions.bin
+          cp .pio/build/esp32-s3-devkitc-1/firmware.bin flash/bin/firmware.bin
+          cp .pio/build/esp32-s3-devkitc-1/bootloader.bin flash/bin/bootloader.bin
+          cp .pio/build/esp32-s3-devkitc-1/partitions.bin flash/bin/partitions.bin
+          
+          # Create flash.zip
+          zip -r release/flash.zip flash
             
           echo "Build Date: $(date)" > release/build-info.txt
           echo "Git Commit: ${{ github.sha }}" >> release/build-info.txt
@@ -62,6 +76,7 @@ jobs:
             release/firmware.bin
             release/bootloader.bin
             release/partitions.bin
+            release/flash.zip
             release/build-info.txt
           draft: false
           prerelease: false

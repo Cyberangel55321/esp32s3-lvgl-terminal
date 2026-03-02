@@ -250,7 +250,7 @@ git clone https://github.com/Lee-Stone/esp32s3-lvgl-terminal.git
 
 - 烧录完成之后提示 **Flash Successful**。
 
-  ![7](images/7.png)****
+  ![7](images/7.png)
 
 **提示**：烧录工具中包含工程编译出来的 **bin** 文件。
 

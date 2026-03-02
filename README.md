@@ -18,6 +18,7 @@
   - [1. 安装 VSCode](#1-安装-vscode)
   - [2. 安装插件](#2-安装插件)
   - [3. 编译烧录](#3-编译烧录)
+  - [4. 免环境烧录](#4-免环境烧录)
 - [⚠️ 注意事项](#️-注意事项)
 - [📧 联系方式](#-联系方式)
 
@@ -178,7 +179,9 @@ esp32s3-lvgl-terminal/
 **克隆项目**：
 
 ```powershell
+# 任选其一
 git clone https://github.com/CaddonThaw/esp32s3-lvgl-terminal.git
+git clone https://github.com/Lee-Stone/esp32s3-lvgl-terminal.git
 ```
 
 **打开项目**：
@@ -226,6 +229,30 @@ git clone https://github.com/CaddonThaw/esp32s3-lvgl-terminal.git
 *   点击底部状态栏的 **右箭头图标 (Upload)** `→`。
 *   按下开发板的BOOT按键，再按下RST按键松开，最后松开BOOT按键进入下载模式。
 *   PlatformIO 会自动寻找串口并烧录程序。
+
+### 4. 免环境烧录
+
+**下载烧录工具**：[flash.zip](https://github.com/Lee-Stone/esp32s3-lvgl-terminal/releases/latest/download/flash.zip)
+
+**烧录程序**：
+
+- 解压**烧录工具**，双击文件夹下的 **flash.bat** 文件（若提示有风险，右击以**管理员身份运行**）。
+
+  ![4](images/4.png)
+
+- 按下开发板的BOOT按键，再按下RST按键松开，最后松开BOOT按键进入下载模式。
+
+- 选择开发板的串口序号，输入 **y** 确定后开始烧录。
+
+  ![5](images/5.png)
+
+  ![6](images/6.png)
+
+- 烧录完成之后提示 **Flash Successful**。
+
+  ![7](images/7.png)****
+
+**提示**：烧录工具中包含工程编译出来的 **bin** 文件。
 
 ## ⚠️ 注意事项
 

@@ -182,6 +182,7 @@ esp32s3-lvgl-terminal/
 # 任选其一
 git clone https://github.com/CaddonThaw/esp32s3-lvgl-terminal.git
 git clone https://github.com/Lee-Stone/esp32s3-lvgl-terminal.git
+git clone https://github.com/Cyberangel55321/esp32s3-lvgl-terminal.git
 ```
 
 **打开项目**：
